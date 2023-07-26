@@ -187,3 +187,110 @@ class TestQueryDictFromHTML(SimpleTestCase):
     def test_invalid_index(self):
         with self.assertRaises(ValueError):
             querydict_from_html(self.html, form_index=5)
+
+
+
+
+
+    def test_no_form_id_or_index(self):
+        # Quando nenhum form_id ou form_index é fornecido, o primeiro formulário deve ser usado
+        result = querydict_from_html(self.html)
+        self.assertEqual(list(result.lists()), self.personal_details)
+
+    def test_invalid_form_index(self):
+        # Verificar se um ValueError é lançado ao fornecer um índice de formulário inválido
+        with self.assertRaises(ValueError):
+            querydict_from_html(self.html, form_index=5)
+
+    def test_multiple_forms(self):
+        # Verificar se é possível extrair dados de um formulário específico quando há vários formulários no HTML
+        result = querydict_from_html(self.html, form_id='event-details')
+        self.assertEqual(list(result.lists()), self.event_details)
+
+    def test_exclude_csrf(self):
+        # Verificar se é possível excluir o token CSRF dos dados extraídos
+        result = querydict_from_html(self.html, exclude_csrf=True)
+        expected_result = self.personal_details  # Não inclui o token CSRF
+        self.assertEqual(list(result.lists()), expected_result)
+
+    def test_input_types(self):
+        # Verificar se os diferentes tipos de campos de entrada são tratados corretamente
+        html = """
+        <form>
+            <input type="text" name="text_input" value="Text Value">
+            <input type="password" name="password_input" value="Password Value">
+            <input type="checkbox" name="checkbox_input" value="Checkbox Value" checked>
+            <input type="radio" name="radio_input" value="Radio Value" checked>
+            <input type="hidden" name="hidden_input" value="Hidden Value">
+            <textarea name="textarea_input">Textarea Value</textarea>
+        </form>
+        """
+        expected_result = [
+            ('text_input', ['Text Value']),
+            ('password_input', ['Password Value']),
+            ('checkbox_input', ['Checkbox Value']),
+            ('radio_input', ['Radio Value']),
+            ('hidden_input', ['Hidden Value']),
+            ('textarea_input', ['Textarea Value']),
+        ]
+        result = querydict_from_html(html)
+        self.assertEqual(list(result.lists()), expected_result)
+
+    def test_select_field(self):
+        # Verificar se os campos de seleção são tratados corretamente
+        html = """
+        <form>
+            <select name="select_field">
+                <option value="option1">Option 1</option>
+                <option value="option2" selected>Option 2</option>
+                <option value="option3">Option 3</option>
+            </select>
+            <select name="multiple_select_field" multiple>
+                <option value="option1" selected>Option 1</option>
+                <option value="option2">Option 2</option>
+                <option value="option3" selected>Option 3</option>
+            </select>
+        </form>
+        """
+        expected_result = [
+            ('select_field', ['option2']),
+            ('multiple_select_field', ['option1', 'option3']),
+        ]
+        result = querydict_from_html(html)
+        self.assertEqual(list(result.lists()), expected_result)
+
+    def test_fieldset(self):
+        # Verificar se os campos dentro de um fieldset são tratados corretamente
+        html = """
+        <form>
+            <fieldset>
+                <legend>Fieldset 1</legend>
+                <input type="text" name="input1" value="Value 1">
+                <input type="text" name="input2" value="Value 2">
+            </fieldset>
+            <fieldset>
+                <legend>Fieldset 2</legend>
+                <input type="text" name="input3" value="Value 3">
+                <input type="text" name="input4" value="Value 4">
+            </fieldset>
+        </form>
+        """
+        expected_result = [
+            ('input1', ['Value 1']),
+            ('input2', ['Value 2']),
+            ('input3', ['Value 3']),
+            ('input4', ['Value 4']),
+        ]
+        result = querydict_from_html(html)
+        self.assertEqual(list(result.lists()), expected_result)
+
+    def test_empty_html(self):
+        # Verificar se um ValueError é lançado ao fornecer um HTML vazio
+        with self.assertRaises(ValueError):
+            querydict_from_html('')
+
+    def test_form_without_inputs(self):
+        # Verificar se um ValueError é lançado quando um formulário não contém nenhum campo de entrada
+        html = '<form></form>'
+        with self.assertRaises(ValueError):
+            querydict_from_html(html)

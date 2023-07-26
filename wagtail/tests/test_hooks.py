@@ -34,3 +34,5 @@ class TestLoginView(WagtailTestUtils, TestCase):
         with self.register_hook("test_hook_name", after_hook, order=1):
             hook_fns = hooks.get_hooks("test_hook_name")
             self.assertEqual(hook_fns, [test_hook, after_hook])
+ ##################################################################################           
+   

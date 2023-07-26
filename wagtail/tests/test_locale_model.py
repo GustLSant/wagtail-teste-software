@@ -166,3 +166,6 @@ class TestLocaleModel(TestCase):
         self.assertEqual(Page.get_first_root_node().locale.language_code, "en")
         Locale.objects.get(language_code="en").delete()
         self.assertEqual(Page.get_first_root_node().locale.language_code, "fr")
+##############################################################################################
+
+      
